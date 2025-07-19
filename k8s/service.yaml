@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: resilient-app
+  namespace: resilient-demo
+  labels:
+    app.kubernetes.io/name: resilient-app
+    app.kubernetes.io/component: web
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app.kubernetes.io/name: resilient-app
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: resilient-demo
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: database
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+    name: postgres
+  selector:
+    app.kubernetes.io/name: postgres 
