@@ -1,0 +1,169 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: resilient-app
+  namespace: resilient-demo
+  labels:
+    app.kubernetes.io/name: resilient-app
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: resilience-demo
+    app.kubernetes.io/version: "1.0.0"
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: resilient-app
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: resilient-app
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: resilience-demo
+        app.kubernetes.io/version: "1.0.0"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      
+      # Termination grace period for graceful shutdown
+      terminationGracePeriodSeconds: 60
+      
+      containers:
+      - name: resilient-app
+        image: resilient-app:latest
+        imagePullPolicy: Never  # For Kind cluster
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        
+        # Environment variables from ConfigMap and Secret
+        envFrom:
+        - configMapRef:
+            name: resilient-app-config
+        - secretRef:
+            name: postgres-secret
+        
+        # Resource limits and requests
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        
+        # Security context for container
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1001
+          capabilities:
+            drop:
+            - ALL
+        
+        # Startup probe - gives the app time to initialize
+        startupProbe:
+          httpGet:
+            path: /startup
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 12  # 60 seconds total (5s * 12)
+          successThreshold: 1
+        
+        # Liveness probe - restarts container if unhealthy
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        
+        # Readiness probe - removes from load balancer if not ready
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+          successThreshold: 1
+        
+        # Lifecycle hooks for graceful shutdown
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - sleep 15  # Give time for load balancer to drain connections
+        
+        # Volume mounts for tmp directory (since root filesystem is read-only)
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      
+      # Pod disruption budget considerations
+      # (Defined separately in a PodDisruptionBudget resource)
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: resilient-app-pdb
+  namespace: resilient-demo
+  labels:
+    app.kubernetes.io/name: resilient-app
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: resilience-demo
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: resilient-app
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: resilient-app
+  namespace: resilient-demo
+  labels:
+    app.kubernetes.io/name: resilient-app
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: resilience-demo
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app.kubernetes.io/name: resilient-app 

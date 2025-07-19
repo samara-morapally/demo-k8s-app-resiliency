@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: resilient-demo
+  labels:
+    app.kubernetes.io/name: resilient-demo
+    app.kubernetes.io/part-of: resilience-demo 
