@@ -43,16 +43,21 @@ echo -e "${GREEN}✅ Go dependencies resolved${NC}"
 
 # Build Docker image
 echo -e "${BLUE}🐳 Building Docker image...${NC}"
-docker build -t resilient-app:latest .
-
-# Verify image was built
-if ! docker images | grep -q "resilient-app.*latest"; then
+if docker build -t resilient-app:latest .; then
+    echo -e "${GREEN}✅ Docker image built successfully${NC}"
+else
     echo -e "${RED}❌ Failed to build Docker image${NC}"
     exit 1
 fi
 
-echo -e "${GREEN}✅ Application compiled successfully${NC}"
-echo -e "${GREEN}✅ Docker image built: resilient-app:latest${NC}"
+# Verify image was built
+if docker images --format "table {{.Repository}}:{{.Tag}}" | grep -q "resilient-app:latest"; then
+    echo -e "${GREEN}✅ Application compiled successfully${NC}"
+    echo -e "${GREEN}✅ Docker image built: resilient-app:latest${NC}"
+else
+    echo -e "${RED}❌ Docker image not found after build${NC}"
+    exit 1
+fi
 
 # Load image into Kind cluster
 echo -e "${BLUE}📦 Loading image into Kind cluster...${NC}"
