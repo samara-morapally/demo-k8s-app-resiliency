@@ -11,7 +11,7 @@ A comprehensive, hands-on demonstration of building truly resilient applications
 
 **Containerization ≠ Resilience**. True resilience requires implementing multiple patterns:
 
-- ✅ **98.7% success rate** under high load
+- ✅ **99.7% success rate** under high load
 - ✅ **Sub-30 second recovery** from pod failures
 - ✅ **Zero data loss** during graceful shutdowns
 - ✅ **Automatic failover** without manual intervention
@@ -143,8 +143,7 @@ demo-k8s-app-resiliency/
 │   ├── test-degradation.sh    # Circuit breaker testing
 │   └── chaos-test.sh          # Comprehensive chaos testing
 └── docs/                      # Documentation
-    ├── COHESIVE_MEDIUM_ARTICLE.md # Complete technical article
-    └── QUICK_REFERENCE.md     # Command reference guide
+    ├── resilience-patterns.md
 ```
 
 ## 🔍 **Key Implementation Details**
@@ -253,12 +252,6 @@ kubectl describe deployment resilient-app -n resilient-demo
 - Apply patterns to current applications
 - Build chaos engineering into development process
 
-## 📚 **Learn More**
-
-- **Complete Technical Article**: [COHESIVE_MEDIUM_ARTICLE.md](docs/COHESIVE_MEDIUM_ARTICLE.md)
-- **Quick Reference Guide**: [QUICK_REFERENCE.md](QUICK_REFERENCE.md)
-- **Implementation Details**: Explore the `resilient-app/` source code
-- **Test Scenarios**: Review the `scripts/` directory
 
 ## 🤝 **Contributing**
 
