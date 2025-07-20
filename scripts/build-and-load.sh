@@ -51,7 +51,7 @@ else
 fi
 
 # Verify image was built
-if docker images --format "table {{.Repository}}:{{.Tag}}" | grep -q "resilient-app:latest"; then
+if docker images resilient-app:latest --format "{{.Repository}}:{{.Tag}}" | grep -q "resilient-app:latest"; then
     echo -e "${GREEN}✅ Application compiled successfully${NC}"
     echo -e "${GREEN}✅ Docker image built: resilient-app:latest${NC}"
 else
